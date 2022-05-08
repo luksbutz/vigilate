@@ -30,11 +30,15 @@ Host
 <div class="row">
     <div class="col">
         <form action="/admin/host/0" method="post" novalidate class="needs-validation" id="host-form">
+            <input type="hidden" name="action" value="1" id="action">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
             <ul class="nav nav-tabs" id="host-tabs">
                 <li class="nav-item">
                     <a class="nav-link active" href="#host-content" data-target="" data-toggle="tab"
                        id="host-tab" role="tab">Host</a>
                 </li>
+                {{if host.ID > 0}}
                 <li class="nav-item">
                     <a class="nav-link" href="#services-content" data-target="" data-toggle="tab"
                        id="services-tab" role="tab">Manage Services</a>
@@ -55,6 +59,7 @@ Host
                     <a class="nav-link" href="#pending-content" data-target="" data-toggle="tab"
                        id="pending-tab" role="tab">Pending</a>
                 </li>
+                {{end}}
             </ul>
 
             <div class="tab-content" id="host-tab-content" style="min-height: 55vh">
@@ -64,17 +69,17 @@ Host
                         <div class="col-md-6 col-xs-12">
                             <div class="mb-3 mt-3">
                                 <label for="host_name" class="form-label">Host Name</label>
-                                <input type="text" id="host_name" name="host_name" value="" class="form-control">
+                                <input type="text" id="host_name" name="host_name" value="{{host.HostName}}" class="form-control" required>
                             </div>
 
                             <div class="mb-3">
                                 <label for="canonical_name" class="form-label">Canonical Name</label>
-                                <input type="text" id="canonical_name" name="canonical_name" value="" class="form-control">
+                                <input type="text" id="canonical_name" name="canonical_name" value="" class="form-control" required>
                             </div>
 
                             <div class="mb-3">
                                 <label for="url" class="form-label">URL</label>
-                                <input type="text" id="url" name="url" value="" class="form-control">
+                                <input type="text" id="url" name="url" value="" class="form-control" required>
                             </div>
 
                             <div class="mb-3">
@@ -125,6 +130,7 @@ Host
                     </div>
                 </div>
 
+                {{if host.ID > 0}}
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="services-tab"
                      id="services-content">
                     Service content
@@ -149,6 +155,7 @@ Host
                      id="pending-content">
                     Pending content
                 </div>
+                {{end}}
             </div>
 
         </form>
@@ -159,5 +166,36 @@ Host
 
 
 {{ block js() }}
+<script>
+    function val() {
+        document.getElementById("action").value = 0;
+        let form = document.getElementById("host-form");
+        if (form.checkValidity() === false) {
+            errorAlert("Error: check all tabs!");
+            this.event.preventDefault();
+            this.event.stopPropagation();
+        }
+        form.classList.add('was-validated');
 
+        if (form.checkValidity() === true) {
+            form.submit();
+        }
+    }
+
+    function saveClose() {
+        document.getElementById("action").value = 1;
+        let form = document.getElementById("host-form");
+        if (form.checkValidity() === false) {
+            errorAlert("Error: check all tabs!");
+            this.event.preventDefault();
+            this.event.stopPropagation();
+
+        }
+        form.classList.add('was-validated');
+
+        if (form.checkValidity() === true) {
+            form.submit();
+        }
+    }
+</script>
 {{end}}
