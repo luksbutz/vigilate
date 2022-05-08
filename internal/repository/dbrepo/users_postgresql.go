@@ -155,7 +155,7 @@ func (m *postgresDBRepo) CheckForToken(id int, token string) bool {
 	return err == nil
 }
 
-// Insert method to add a new record to the users table.
+// InsertUser method to add a new record to the users table.
 func (m *postgresDBRepo) InsertUser(u models.User) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
