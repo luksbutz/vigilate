@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/go-chi/chi"
@@ -48,11 +49,17 @@ func (repo *DBRepo) AdminDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	healthy, warning, problem, pending, err := repo.DB.GetAllServiceStatusCounts()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
 	vars := make(jet.VarMap)
-	vars.Set("no_healthy", 0)
-	vars.Set("no_problem", 0)
-	vars.Set("no_pending", 0)
-	vars.Set("no_warning", 0)
+	vars.Set("no_healthy", healthy)
+	vars.Set("no_warning", warning)
+	vars.Set("no_problem", problem)
+	vars.Set("no_pending", pending)
 	vars.Set("hosts", hosts)
 
 	err = helpers.RenderPage(w, r, "dashboard", vars, nil)
@@ -324,6 +331,36 @@ func (repo *DBRepo) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	_ = repo.DB.DeleteUser(id)
 	repo.App.Session.Put(r.Context(), "flash", "User deleted")
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+type serviceJSON struct {
+	OK bool `json:"ok"`
+}
+
+// ToggleServiceForHost turns a host service on or off (active or inactive)
+func (repo *DBRepo) ToggleServiceForHost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	hostID, _ := strconv.Atoi(r.Form.Get("host_id"))
+	serviceID, _ := strconv.Atoi(r.Form.Get("service_id"))
+	active, _ := strconv.Atoi(r.Form.Get("active"))
+
+	var resp serviceJSON
+	resp.OK = true
+
+	err = repo.DB.UpdateHostServiceStatus(hostID, serviceID, active)
+	if err != nil {
+		resp.OK = false
+		log.Println(err)
+	}
+
+	out, _ := json.MarshalIndent(resp, "", "\t")
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(out)
 }
 
 // ClientError will display error page for client error i.e. bad request
