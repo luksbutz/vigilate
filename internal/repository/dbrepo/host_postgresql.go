@@ -283,8 +283,7 @@ select
 }
 
 func (m *postgresDBRepo) GetServicesByStatus(status string) ([]models.HostService, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second) defer cancel()
 
 	query := `
 		select
@@ -298,6 +297,8 @@ func (m *postgresDBRepo) GetServicesByStatus(status string) ([]models.HostServic
 		where
 		    status = $1
 			and hs.active = 1
+		order by
+		    host_name, service_name
 `
 
 	var services []models.HostService
