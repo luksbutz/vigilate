@@ -267,10 +267,10 @@ func (m *postgresDBRepo) GetAllServiceStatusCounts() (int, int, int, int, error)
 
 	query := `
 select 
-	(select count(id) from host_services where status = 'healthy') as healthy,
-	(select count(id) from host_services where status = 'warning') as warning,
-	(select count(id) from host_services where status = 'problem') as problem,
-	(select count(id) from host_services where status = 'pending') as pending
+	(select count(id) from host_services where active = 1 and status = 'healthy') as healthy,
+	(select count(id) from host_services where active = 1 and status = 'warning') as warning,
+	(select count(id) from host_services where active = 1 and status = 'problem') as problem,
+	(select count(id) from host_services where active = 1 and status = 'pending') as pending
 `
 
 	err := m.DB.QueryRowContext(ctx, query).Scan(&healthy, &warning, &problem, &pending)
