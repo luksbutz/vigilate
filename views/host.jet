@@ -170,22 +170,130 @@ Host
 
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="healthy-tab"
                      id="healthy-content">
-                    Healthy content
+                    <div class="row">
+                        <div class="col">
+                            <h4 class="pt-3">Healthy Services</h4>
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Last Check</th>
+                                    <th>Message</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {{range host.HostServices}}
+                                {{if .Status == "healthy"}}
+                                <tr>
+                                    <td>
+                                        {{.Service.ServiceName}}
+                                        <span style="cursor:pointer" class="badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                    </td>
+                                    <td>{{.LastCheck}}</td>
+                                    <td>.</td>
+                                </tr>
+                                {{end}}
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="warning-tab"
                      id="warning-content">
-                    Warning content
+                    <div class="row">
+                        <div class="col">
+                            <h4 class="pt-3">Warning Services</h4>
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Last Check</th>
+                                    <th>Message</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {{range host.HostServices}}
+                                {{if .Status == "warning"}}
+                                <tr>
+                                    <td>
+                                        {{.Service.ServiceName}}
+                                        <span style="cursor:pointer" class="badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                    </td>
+                                    <td>{{.LastCheck}}</td>
+                                    <td>.</td>
+                                </tr>
+                                {{end}}
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="problem-tab"
                      id="problem-content">
-                    Problem content
+                    <div class="row">
+                        <div class="col">
+                            <h4 class="pt-3">Problem Services</h4>
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Last Check</th>
+                                    <th>Message</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {{range host.HostServices}}
+                                {{if .Status == "problem"}}
+                                <tr>
+                                    <td>
+                                        {{.Service.ServiceName}}
+                                        <span style="cursor:pointer" class="badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                    </td>
+                                    <td>{{.LastCheck}}</td>
+                                    <td>.</td>
+                                </tr>
+                                {{end}}
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" role="tabpanel" aria-labelledby="pending-tab"
                      id="pending-content">
-                    Pending content
+                    <div class="row">
+                        <div class="col">
+                            <h4 class="pt-3">Pending Services</h4>
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Last Check</th>
+                                    <th>Message</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {{range host.HostServices}}
+                                {{if .Status == "pending"}}
+                                <tr>
+                                    <td>
+                                        {{.Service.ServiceName}}
+                                        <span style="cursor:pointer" class="badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                    </td>
+                                    <td>{{.LastCheck}}</td>
+                                    <td>.</td>
+                                </tr>
+                                {{end}}
+                                {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
                 {{end}}
             </div>
@@ -231,6 +339,32 @@ Host
                     })
             })
         }
+
+        let tabMap = new Map();
+        let tabs = document.querySelectorAll('[data-toggle="tab"]');
+        let i = 0;
+        Array.prototype.filter.call(tabs, function (el) {
+            el.addEventListener("click", function () {
+                history.pushState("", document.title, window.location.pathname);
+                localStorage.setItem('activeTab', el.getAttribute("data-target"));
+            })
+            // add it to map
+            tabMap.set(el.getAttribute("href"), i);
+            i++;
+        });
+
+        // show last selected tab, if exists
+        if (!window.location.hash) {
+            let activeTab = localStorage.getItem('activeTab');
+            if (activeTab) {
+                document.querySelectorAll('[data-toggle="tab"]')[activeTab].Tab.show()
+            }
+        } else {
+            // there is a hash in the url, so show appropriate tab
+            if (tabMap.has(window.location.hash)) {
+                document.querySelectorAll('[data-toggle="tab"]')[tabMap.get(window.location.hash)].Tab.show()
+            }
+        }
     })
     function val() {
         document.getElementById("action").value = 0;
@@ -261,6 +395,10 @@ Host
         if (form.checkValidity() === true) {
             form.submit();
         }
+    }
+
+    function checkNow(id) {
+        console.log("Clicked check now");
     }
 </script>
 {{end}}
