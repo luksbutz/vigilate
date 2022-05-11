@@ -13,11 +13,15 @@ import (
 )
 
 const (
-	HTTP           = 1
-	HTTPS          = 2
+	// HTTP is the unencrypted web service check
+	HTTP = 1
+	// HTTPS is the encrypted web service check
+	HTTPS = 2
+	// SSLCertificate is ssl certificate check
 	SSLCertificate = 3
 )
 
+// jsonResp describes the JSON response sent back to client
 type jsonResp struct {
 	OK            bool      `json:"ok"`
 	Message       string    `json:"message"`
@@ -29,6 +33,12 @@ type jsonResp struct {
 	LastCheck     time.Time `json:"last_check"`
 }
 
+// ScheduledCheck performs a scheduled check on a host service by id
+func (repo *DBRepo) ScheduledCheck(hostServiceID int) {
+
+}
+
+// TestCheck manually tests a host service and sends JSON response
 func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
 	hostServiceID, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	oldStatus := chi.URLParam(r, "oldStatus")
@@ -90,6 +100,7 @@ func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(out)
 }
 
+// testServiceForHost checks the service according to service id
 func (repo *DBRepo) testServiceForHost(h models.Host, hs models.HostService) (string, string) {
 	var msg, newStatus string
 
@@ -102,6 +113,7 @@ func (repo *DBRepo) testServiceForHost(h models.Host, hs models.HostService) (st
 	return msg, newStatus
 }
 
+// testHTTPForHost tests HTTP service
 func (repo *DBRepo) testHTTPForHost(url string) (string, string) {
 	url = strings.TrimSuffix(url, "/")
 

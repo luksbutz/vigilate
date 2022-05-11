@@ -373,12 +373,14 @@ func (m *postgresDBRepo) GetHostServiceByID(id int) (models.HostService, error) 
 	defer cancel()
 
 	query := `
-		select hs.id, hs.host_id, hs.service_id, hs.active, hs.schedule_number,
+		select
+		    hs.id, hs.host_id, hs.service_id, hs.active, hs.schedule_number,
 			hs.schedule_unit, hs.last_check, hs.created_at, hs.updated_at, hs.status,
 			s.id, s.service_name, s.active, s.icon, s.created_at, s.updated_at
 		from host_services hs
 			left join services s on(hs.service_id = s.id)
-		where hs.id = $1
+		where
+		    hs.id = $1
 `
 
 	var hs models.HostService
@@ -408,4 +410,64 @@ func (m *postgresDBRepo) GetHostServiceByID(id int) (models.HostService, error) 
 	}
 
 	return hs, nil
+}
+
+func (m *postgresDBRepo) GetServicesToMonitor() ([]models.HostService, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+		select 
+		    hs.id, hs.host_id, hs.service_id, hs.active, hs.schedule_number,
+			hs.schedule_unit, hs.last_check, hs.created_at, hs.updated_at, hs.status,
+			s.id, s.service_name, s.active, s.icon, s.created_at, s.updated_at,
+			h.host_name
+		from host_services hs
+			left join services s on(hs.service_id = s.id)
+			left join hosts h on(h.id = hs.host_id)
+		where
+		    h.active = 1
+			and hs.active = 1
+`
+
+	var services []models.HostService
+
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var hs models.HostService
+		err := rows.Scan(
+			&hs.ID,
+			&hs.HostID,
+			&hs.ServiceID,
+			&hs.Active,
+			&hs.ScheduleNumber,
+			&hs.ScheduleUnit,
+			&hs.LastCheck,
+			&hs.CreatedAt,
+			&hs.UpdatedAt,
+			&hs.Status,
+			&hs.Service.ID,
+			&hs.Service.ServiceName,
+			&hs.Service.Active,
+			&hs.Service.Icon,
+			&hs.Service.CreatedAt,
+			&hs.Service.UpdatedAt,
+			&hs.HostName,
+		)
+		if err != nil {
+			return nil, err
+		}
+		services = append(services, hs)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return services, nil
 }
