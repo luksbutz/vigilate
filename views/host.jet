@@ -2,7 +2,9 @@
 
 {{block css()}}
 <style>
-
+.pointer {
+    cursor: pointer;
+}
 </style>
 {{end}}
 
@@ -187,9 +189,13 @@ Host
                                 <tr>
                                     <td>
                                         {{.Service.ServiceName}}
-                                        <span style="cursor:pointer" class="badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
                                     </td>
-                                    <td>{{.LastCheck}}</td>
+                                    <td>
+                                        {{if dateAfterYearOne(.LastCheck)}}
+                                        {{dateFromLayout(.LastCheck, "2006-01-02 15:04")}}
+                                        {{end}}
+                                    </td>
                                     <td>.</td>
                                 </tr>
                                 {{end}}
@@ -219,9 +225,13 @@ Host
                                 <tr>
                                     <td>
                                         {{.Service.ServiceName}}
-                                        <span style="cursor:pointer" class="badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
                                     </td>
-                                    <td>{{.LastCheck}}</td>
+                                    <td>
+                                        {{if dateAfterYearOne(.LastCheck)}}
+                                        {{dateFromLayout(.LastCheck, "2006-01-02 15:04")}}
+                                        {{end}}
+                                    </td>
                                     <td>.</td>
                                 </tr>
                                 {{end}}
@@ -251,9 +261,13 @@ Host
                                 <tr>
                                     <td>
                                         {{.Service.ServiceName}}
-                                        <span style="cursor:pointer" class="badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
                                     </td>
-                                    <td>{{.LastCheck}}</td>
+                                    <td>
+                                        {{if dateAfterYearOne(.LastCheck)}}
+                                        {{dateFromLayout(.LastCheck, "2006-01-02 15:04")}}
+                                        {{end}}
+                                    </td>
                                     <td>.</td>
                                 </tr>
                                 {{end}}
@@ -282,10 +296,15 @@ Host
                                 {{if .Status == "pending"}}
                                 <tr>
                                     <td>
+                                        <span class="{{.Service.Icon}}"></span>
                                         {{.Service.ServiceName}}
-                                        <span style="cursor:pointer" class="badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}}, 'pending')">Check Now</span>
                                     </td>
-                                    <td>{{.LastCheck}}</td>
+                                    <td>
+                                        {{if dateAfterYearOne(.LastCheck)}}
+                                        {{dateFromLayout(.LastCheck, "2006-01-02 15:04")}}
+                                        {{end}}
+                                    </td>
                                     <td>.</td>
                                 </tr>
                                 {{end}}
@@ -397,8 +416,33 @@ Host
         }
     }
 
-    function checkNow(id) {
+    function checkNow(id, oldStatus) {
         console.log("Clicked check now");
+        fetch(`/admin/perform-check/${id}/${oldStatus}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log("OK:", data.ok, "message", data.message);
+
+                if (data.ok) {
+                    if (data.old_status !== data.new_status) {
+                        attention.toast({
+                            msg: data.message,
+                            icon: "info",
+                            timer: 60000,
+                            showCloseButton: true,
+                        });
+                    } else {
+                        attention.toast({
+                            msg: `Service is still in ${data.new_status} state`,
+                            icon: "info",
+                            timer: 5000,
+                            showCloseButton: true,
+                        });
+                    }
+                } else {
+                    errorAlert("Something went wrong");
+                }
+            })
     }
 </script>
 {{end}}
