@@ -437,31 +437,6 @@
                 }
             })
 
-            let tabMap = new Map();
-            let tabs = document.querySelectorAll('[data-toggle="tab"]');
-            let i = 0;
-            Array.prototype.filter.call(tabs, function (el) {
-                el.addEventListener("click", function () {
-                    history.pushState("", document.title, window.location.pathname);
-                    localStorage.setItem('activeTab', el.getAttribute("data-target"));
-                })
-                // add it to map
-                tabMap.set(el.getAttribute("href"), i);
-                i++;
-            });
-
-            // show last selected tab, if exists
-            if (!window.location.hash) {
-                let activeTab = localStorage.getItem('activeTab');
-                if (activeTab) {
-                    document.querySelectorAll('[data-toggle="tab"]')[activeTab].Tab.show()
-                }
-            } else {
-                // there is a hash in the url, so show appropriate tab
-                if (tabMap.has(window.location.hash)) {
-                    document.querySelectorAll('[data-toggle="tab"]')[tabMap.get(window.location.hash)].Tab.show()
-                }
-            }
         })
 
         function showTwilio() {
