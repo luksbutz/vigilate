@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/CloudyKit/jet/v6"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/luksbutz/vigilate/internal/config"
 	"github.com/luksbutz/vigilate/internal/driver"
 	"github.com/luksbutz/vigilate/internal/helpers"

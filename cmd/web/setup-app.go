@@ -11,6 +11,7 @@ import (
 	"github.com/luksbutz/vigilate/internal/handlers"
 	"github.com/luksbutz/vigilate/internal/helpers"
 	"github.com/pusher/pusher-http-go"
+	"github.com/robfig/cron/v3"
 	"log"
 	"net/http"
 	"os"
@@ -137,6 +138,15 @@ func setupApp() (*string, error) {
 	log.Println("Secure", *pusherSecure)
 
 	app.WsClient = wsClient
+
+	// create scheduler
+	localZone, _ := time.LoadLocation("Local")
+	scheduler := cron.New(cron.WithLocation(localZone), cron.WithChain(
+		cron.DelayIfStillRunning(cron.DefaultLogger),
+		cron.Recover(cron.DefaultLogger),
+	))
+
+	app.Scheduler = scheduler
 
 	helpers.NewHelpers(&app)
 
