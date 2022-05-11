@@ -52,6 +52,14 @@ func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
 	msg, newStatus := repo.testServiceForHost(h, hs)
 
 	// update the host service in the database (if changed) ant last check
+	hs.Status = newStatus
+	hs.UpdatedAt = time.Now()
+
+	err = repo.DB.UpdateHostService(hs)
+	if err != nil {
+		log.Println(err)
+		okay = false
+	}
 
 	// broadcast service status changed event
 

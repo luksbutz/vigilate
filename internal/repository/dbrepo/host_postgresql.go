@@ -260,6 +260,34 @@ func (m *postgresDBRepo) UpdateHostServiceStatus(hostID, serviceID, active int) 
 	return err
 }
 
+// UpdateHostServiceStatus updates a host service in the database
+func (m *postgresDBRepo) UpdateHostService(hs models.HostService) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+		update host_services set
+		        host_id = $1, service_id = $2, active = $3, schedule_number = $4, schedule_unit = $5,
+			    last_check = $6, updated_at = $7, status = $8
+		where id = $9
+
+`
+
+	_, err := m.DB.ExecContext(ctx, stmt,
+		hs.HostID,
+		hs.ServiceID,
+		hs.Active,
+		hs.ScheduleNumber,
+		hs.ScheduleUnit,
+		hs.LastCheck,
+		hs.UpdatedAt,
+		hs.Status,
+		hs.ID,
+	)
+
+	return err
+}
+
 // GetAllServiceStatusCounts returns the count for all active services according to there status
 func (m *postgresDBRepo) GetAllServiceStatusCounts() (int, int, int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
