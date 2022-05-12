@@ -399,3 +399,74 @@ func show500(w http.ResponseWriter, r *http.Request) {
 func printTemplateError(w http.ResponseWriter, err error) {
 	_, _ = fmt.Fprint(w, fmt.Sprintf(`<small><span class='text-danger'>Error executing template: %s</span></small>`, err))
 }
+
+// SetSystemPref set a given system preference to supplied value, and returns JSON response
+func (repo *DBRepo) SetSystemPref(w http.ResponseWriter, r *http.Request) {
+	resp := jsonResp{OK: true}
+
+	err := r.ParseForm()
+	if err != nil {
+		resp.OK = false
+		resp.Message = err.Error()
+	} else {
+		prefName := r.Form.Get("pref_name")
+		prefValue := r.Form.Get("pref_value")
+
+		err = repo.DB.UpdateSystemPref(prefName, prefValue)
+		if err != nil {
+			resp.OK = false
+			resp.Message = err.Error()
+		}
+
+		repo.App.PreferenceMap["monitoring_live"] = prefValue
+	}
+
+	out, _ := json.MarshalIndent(resp, "", "\t")
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(out)
+}
+
+// ToggleMonitoring turns monitoring on and off
+func (repo *DBRepo) ToggleMonitoring(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	enabled := r.PostForm.Get("enabled")
+
+	if enabled == "1" {
+		// start monitoring
+		log.Println("Turning monitoring on")
+		repo.StartMonitoring()
+		repo.App.Scheduler.Start()
+	} else {
+		// stop monitoring
+		log.Println("Turning monitoring off")
+
+		// remove all items in map from scheduler
+		for _, x := range repo.App.MonitorMap {
+			repo.App.Scheduler.Remove(x)
+		}
+
+		// empty the map
+		for k := range repo.App.MonitorMap {
+			delete(repo.App.MonitorMap, k)
+		}
+
+		// delete all entries from schedule, to be sure
+		for _, i := range repo.App.Scheduler.Entries() {
+			repo.App.Scheduler.Remove(i.ID)
+		}
+
+		repo.App.Scheduler.Stop()
+	}
+
+	var resp jsonResp
+	resp.OK = true
+
+	out, _ := json.MarshalIndent(resp, "", "\t")
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(out)
+}
