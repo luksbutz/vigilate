@@ -166,7 +166,7 @@ func (repo *DBRepo) testServiceForHost(h models.Host, hs models.HostService) (st
 			"icon":            hs.Service.Icon,
 			"status":          newStatus,
 			"message":         fmt.Sprintf("%s on %s reports %s", hs.Service.ServiceName, h.HostName, newStatus),
-			"last_check":      time.Now().Format("2006-01-02 3:04:05 PM"),
+			"last_check":      time.Now().Format("2006-01-02 15:04:05"),
 		}
 
 		repo.broadcastMessage("public-channel", "host-service-status-changed", data)
