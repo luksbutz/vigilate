@@ -28,7 +28,22 @@
     })
 
     publicChannel.bind("host-service-status-changed", data => {
-        warningAlert(data.message);
+        successAlert(data.message);
+    })
+
+    publicChannel.bind("host-service-count-changed", data => {
+        if(!!document.getElementById("healthy_count")) {
+            document.getElementById("healthy_count").innerHTML = data.healthy_count;
+        }
+        if(!!document.getElementById("warning_count")) {
+            document.getElementById("warning_count").innerHTML = data.warning_count;
+        }
+        if(!!document.getElementById("problem_count")) {
+            document.getElementById("problem_count").innerHTML = data.problem_count;
+        }
+        if(!!document.getElementById("pending_count")) {
+            document.getElementById("pending_count").innerHTML = data.pending_count;
+        }
     })
 
     let attention = Prompt();
