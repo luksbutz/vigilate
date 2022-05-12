@@ -26,7 +26,7 @@ const maxJobMaxWorkers = 5
 
 func init() {
 	gob.Register(models.User{})
-	_ = os.Setenv("TZ", "America/Halifax")
+	_ = os.Setenv("TZ", "Europe/Berlin")
 }
 
 // main is the application entry point

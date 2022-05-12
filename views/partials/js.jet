@@ -28,20 +28,57 @@
     })
 
     publicChannel.bind("host-service-status-changed", data => {
-        successAlert(data.message);
+        attention.toast({
+            msg: data.message,
+            icon: "info",
+            timer: 30000,
+            showCloseButton: true,
+        });
+
+        // update tables
+
+        // remove existing table row if it exists
+        let hostServiceRow = document.getElementById("host-service-" + data.host_service_id);
+        if (!!hostServiceRow) {
+            hostServiceRow.parentNode.removeChild(hostServiceRow);
+        }
+
+        // update tables, if they exist
+        let table = document.getElementById(data.status + "-table");
+        if (!!table) {
+            console.log("trying to add row to " + data.status + " table");
+            let newRow = table.tBodies[0].insertRow(-1);
+
+            newRow.setAttribute("id", "host-service-" + data.host_service_id);
+
+            // insert the first td
+            let newCell = newRow.insertCell(0);
+            newCell.innerHTML = `
+             <td>
+                <span class="${data.icon}"></span>
+                ${data.service_name}
+                <span class="pointer badge bg-secondary" onclick="checkNow(${data.host_service_id}, '${data.status}')">Check Now</span>
+            </td>
+            `;
+
+            // insert second td
+            newCell = newRow.insertCell(1);
+            if (data.status !== "pending") {
+                newCell.innerHTML = `${data.last_check}`;
+            } else {
+                newCell.innerHTML = "Pending...";
+            }
+
+            // insert 3rd td
+            newCell = newRow.insertCell(2);
+        }
     })
 
     publicChannel.bind("host-service-count-changed", data => {
         if(!!document.getElementById("healthy_count")) {
             document.getElementById("healthy_count").innerHTML = data.healthy_count;
-        }
-        if(!!document.getElementById("warning_count")) {
             document.getElementById("warning_count").innerHTML = data.warning_count;
-        }
-        if(!!document.getElementById("problem_count")) {
             document.getElementById("problem_count").innerHTML = data.problem_count;
-        }
-        if(!!document.getElementById("pending_count")) {
             document.getElementById("pending_count").innerHTML = data.pending_count;
         }
     })
