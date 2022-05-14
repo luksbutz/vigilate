@@ -522,3 +522,78 @@ func (m *postgresDBRepo) GetHostServiceByHostIDServiceID(hostID, serviceID int) 
 
 	return hs, nil
 }
+
+// InsertEvent inserts an event into the database
+func (m *postgresDBRepo) InsertEvent(e models.Event) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+		insert into events
+		    (event_type, host_service_id, host_id, service_name, host_name, message, created_at, updated_at)
+		values
+		    ($1, $2, $3, $4, $5, $6, $7, $8)
+`
+	_, err := m.DB.ExecContext(ctx, stmt,
+		e.EventType,
+		e.HostServiceID,
+		e.HostID,
+		e.ServiceName,
+		e.HostName,
+		e.Message,
+		time.Now(),
+		time.Now(),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetAllEvents gets all events
+func (m *postgresDBRepo) GetAllEvents() ([]models.Event, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+		select
+			id, event_type, host_service_id, host_id, service_name, host_name, message, created_at, updated_at
+		from events
+`
+
+	var events []models.Event
+
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e models.Event
+		err := rows.Scan(
+			&e.ID,
+			&e.EventType,
+			&e.HostServiceID,
+			&e.HostID,
+			&e.ServiceName,
+			&e.HostName,
+			&e.Message,
+			&e.CreatedAt,
+			&e.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, e)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
