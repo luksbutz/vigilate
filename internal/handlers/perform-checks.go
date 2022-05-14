@@ -211,6 +211,7 @@ func (repo *DBRepo) pushStatusChangedEvent(h models.Host, hs models.HostService,
 		"icon":            hs.Service.Icon,
 		"status":          newStatus,
 		"message":         fmt.Sprintf("%s on %s reports %s", hs.Service.ServiceName, h.HostName, newStatus),
+		"last_message":    hs.LastMessage,
 		"last_check":      time.Now().Format("2006-01-02 15:04:05"),
 	}
 
