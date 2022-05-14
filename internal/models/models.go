@@ -81,6 +81,7 @@ type HostService struct {
 	UpdatedAt      time.Time
 	Service        Service
 	HostName       string
+	LastMessage    string
 }
 
 // Schedule is the model for a schedule

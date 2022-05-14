@@ -61,6 +61,7 @@ func (repo *DBRepo) updateHostServiceStatusCount(h models.Host, hs models.HostSe
 	// update the host service record in the database with status (if changed) and last check
 	hs.Status = newStatus
 	hs.LastCheck = time.Now()
+	hs.LastMessage = msg
 
 	err := repo.DB.UpdateHostService(hs)
 	if err != nil {
@@ -108,6 +109,21 @@ func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
 	// test the service
 	msg, newStatus := repo.testServiceForHost(h, hs)
 
+	// save event
+	event := models.Event{
+		EventType:     newStatus,
+		HostServiceID: hs.ID,
+		HostID:        h.ID,
+		ServiceName:   hs.Service.ServiceName,
+		HostName:      hs.HostName,
+		Message:       msg,
+	}
+
+	err = repo.DB.InsertEvent(event)
+	if err != nil {
+		log.Println(err)
+	}
+
 	// broadcast service status changed event
 	if newStatus != hs.Status {
 		repo.pushStatusChangedEvent(h, hs, newStatus)
@@ -115,6 +131,7 @@ func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
 
 	// update the host service in the database (if changed) ant last check
 	hs.Status = newStatus
+	hs.LastMessage = msg
 	hs.UpdatedAt = time.Now()
 	hs.LastCheck = time.Now()
 
