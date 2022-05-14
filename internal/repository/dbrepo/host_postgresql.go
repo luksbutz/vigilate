@@ -33,14 +33,34 @@ func (m *postgresDBRepo) InsertHost(h models.Host) (int, error) {
 	}
 
 	// add host services and set to inactive
-	stmt = `
+
+	query := `select id from services`
+	serviceRows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+	defer serviceRows.Close()
+
+	for serviceRows.Next() {
+		var svcID int64
+		err := serviceRows.Scan(&svcID)
+		if err != nil {
+			return 0, err
+		}
+
+		stmt = `
 		insert into host_services (host_id, service_id, active, schedule_number, schedule_unit, created_at, updated_at, status)
-		values ($1, 1, 0, 3, 'm', $2, $3, 'pending')
+		values ($1, $2, 0, 3, 'm', $3, $4, 'pending')
 `
 
-	_, err = m.DB.ExecContext(ctx, stmt, newID, time.Now(), time.Now())
-	if err != nil {
-		return newID, err
+		_, err = m.DB.ExecContext(ctx, stmt, newID, svcID, time.Now(), time.Now())
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	if err := serviceRows.Err(); err != nil {
+		return 0, err
 	}
 
 	return newID, nil
@@ -85,6 +105,7 @@ func (m *postgresDBRepo) GetHostByID(id int) (models.Host, error) {
 		    host_services hs
 			left join services s on s.id = hs.service_id
 		where host_id = $1
+		order by s.service_name
 `
 
 	rows, err := m.DB.QueryContext(ctx, query, host.ID)
