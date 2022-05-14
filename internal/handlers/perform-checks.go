@@ -7,6 +7,7 @@ import (
 	"github.com/luksbutz/vigilate/internal/channeldata"
 	"github.com/luksbutz/vigilate/internal/helpers"
 	"github.com/luksbutz/vigilate/internal/models"
+	"github.com/luksbutz/vigilate/internal/sms"
 	"html/template"
 	"log"
 	"net/http"
@@ -210,24 +211,45 @@ func (repo *DBRepo) testServiceForHost(h models.Host, hs models.HostService) (st
 					mm.Subject = fmt.Sprintf("HEALTHY: service %s on %s", hs.Service.ServiceName, hs.HostName)
 					mm.Content = template.HTML(fmt.Sprintf(`<p>Service %s on %s reported healthy status</p>
 						<p><strong>Messaged received:</strong> %s</p>`, hs.Service.ServiceName, hs.HostName, msg))
-
 				case "problem":
 					mm.Subject = fmt.Sprintf("PROBLEM: service %s on %s", hs.Service.ServiceName, hs.HostName)
 					mm.Content = template.HTML(fmt.Sprintf(`<p>Service %s on %s reported problem status</p>
 						<p><strong>Messaged received:</strong> %s</p>`, hs.Service.ServiceName, hs.HostName, msg))
-
 				case "warning":
 					mm.Subject = fmt.Sprintf("WARNING: service %s on %s", hs.Service.ServiceName, hs.HostName)
 					mm.Content = template.HTML(fmt.Sprintf(`<p>Service %s on %s reported warning status</p>
 						<p><strong>Messaged received:</strong> %s</p>`, hs.Service.ServiceName, hs.HostName, msg))
-
+				default:
 				}
 
-				helpers.SendEmail(mm)
+				if len(mm.Content) > 0 {
+					helpers.SendEmail(mm)
+				}
 			}
 		}
 
-		// TODO send sms if appropriate
+		// send sms
+		if repo.App.PreferenceMap["notify_via_sms"] == "1" {
+			to := repo.App.PreferenceMap["sms_notify_number"]
+			smsMessage := ""
+
+			switch newStatus {
+			case "healthy":
+				smsMessage = fmt.Sprintf("Service %s on %s is healthy", hs.Service.ServiceName, hs.HostName)
+			case "problem":
+				smsMessage = fmt.Sprintf("Service %s on %s reports a problem: %s", hs.Service.ServiceName, hs.HostName, msg)
+			case "warning":
+				smsMessage = fmt.Sprintf("Service %s on %s repots a warning: %s", hs.Service.ServiceName, hs.HostName, msg)
+			default:
+			}
+
+			if len(smsMessage) > 0 {
+				err := sms.SendTextTwilio(to, smsMessage, repo.App)
+				if err != nil {
+					log.Println("Error sending sms in perform-checks.go", err)
+				}
+			}
+		}
 	}
 
 	repo.pushScheduleChangeEvent(hs, newStatus)
