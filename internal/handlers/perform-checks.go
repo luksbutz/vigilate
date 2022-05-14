@@ -108,6 +108,11 @@ func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
 	// test the service
 	msg, newStatus := repo.testServiceForHost(h, hs)
 
+	// broadcast service status changed event
+	if newStatus != hs.Status {
+		repo.pushStatusChangedEvent(h, hs, newStatus)
+	}
+
 	// update the host service in the database (if changed) ant last check
 	hs.Status = newStatus
 	hs.UpdatedAt = time.Now()
@@ -118,8 +123,6 @@ func (repo *DBRepo) TestCheck(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		okay = false
 	}
-
-	// broadcast service status changed event
 
 	var resp jsonResp
 
@@ -158,23 +161,54 @@ func (repo *DBRepo) testServiceForHost(h models.Host, hs models.HostService) (st
 	}
 
 	if hs.Status != newStatus {
-		data := map[string]string{
-			"host_id":         strconv.Itoa(hs.HostID),
-			"host_service_id": strconv.Itoa(hs.ID),
-			"host_name":       h.HostName,
-			"service_name":    hs.Service.ServiceName,
-			"icon":            hs.Service.Icon,
-			"status":          newStatus,
-			"message":         fmt.Sprintf("%s on %s reports %s", hs.Service.ServiceName, h.HostName, newStatus),
-			"last_check":      time.Now().Format("2006-01-02 15:04:05"),
-		}
-
-		repo.broadcastMessage("public-channel", "host-service-status-changed", data)
+		repo.pushStatusChangedEvent(h, hs, newStatus)
 	}
+
+	repo.pushScheduleChangeEvent(hs, newStatus)
 
 	// TODO - send email/sms if appropriate
 
 	return msg, newStatus
+}
+
+func (repo *DBRepo) pushStatusChangedEvent(h models.Host, hs models.HostService, newStatus string) {
+	data := map[string]string{
+		"host_id":         strconv.Itoa(hs.HostID),
+		"host_service_id": strconv.Itoa(hs.ID),
+		"host_name":       h.HostName,
+		"service_name":    hs.Service.ServiceName,
+		"icon":            hs.Service.Icon,
+		"status":          newStatus,
+		"message":         fmt.Sprintf("%s on %s reports %s", hs.Service.ServiceName, h.HostName, newStatus),
+		"last_check":      time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	repo.broadcastMessage("public-channel", "host-service-status-changed", data)
+}
+
+func (repo *DBRepo) pushScheduleChangeEvent(hs models.HostService, newStatus string) {
+	// broadcast schedule-changed-event
+	yearOne := time.Date(0001, 1, 1, 0, 0, 0, 1, time.UTC)
+
+	data := make(map[string]string)
+	data["host_id"] = strconv.Itoa(hs.HostID)
+	data["host_service_id"] = strconv.Itoa(hs.ID)
+	data["service_id"] = strconv.Itoa(hs.ServiceID)
+
+	if app.Scheduler.Entry(repo.App.MonitorMap[hs.ID]).Next.After(yearOne) {
+		data["next_run"] = repo.App.Scheduler.Entry(repo.App.MonitorMap[hs.ID]).Next.Format("2006-01-02 15:04:05")
+	} else {
+		data["next_run"] = "Pending..."
+	}
+
+	data["last_run"] = time.Now().Format("2006-01-02 15:04:05")
+	data["host"] = hs.HostName
+	data["service"] = hs.Service.ServiceName
+	data["schedule"] = fmt.Sprintf("@every %d%s", hs.ScheduleNumber, hs.ScheduleUnit)
+	data["status"] = newStatus
+	data["icon"] = hs.Service.Icon
+
+	repo.broadcastMessage("public-channel", "schedule-changed", data)
 }
 
 // testHTTPForHost tests HTTP service
@@ -200,5 +234,43 @@ func (repo *DBRepo) broadcastMessage(channel, messageType string, data map[strin
 	err := app.WsClient.Trigger(channel, messageType, data)
 	if err != nil {
 		log.Println(err)
+	}
+}
+
+func (repo *DBRepo) addToMonitorMap(hs models.HostService) {
+	if repo.App.PreferenceMap["monitoring_live"] == "1" {
+		var j job
+		j.HostServiceID = hs.ID
+		scheduleID, err := repo.App.Scheduler.AddJob(
+			fmt.Sprintf("@every %d%s", hs.ScheduleNumber, hs.ScheduleUnit), j)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		repo.App.MonitorMap[hs.ID] = scheduleID
+
+		data := make(map[string]string)
+		data["message"] = "scheduling"
+		data["host_service_id"] = strconv.Itoa(hs.ID)
+		data["next_run"] = "Pending..."
+		data["service"] = hs.Service.ServiceName
+		data["host"] = hs.HostName
+		data["last_run"] = hs.LastCheck.Format("2006-01-02 15:04:05")
+		data["schedule"] = fmt.Sprintf("@every %d%s", hs.ScheduleNumber, hs.ScheduleUnit)
+
+		repo.broadcastMessage("public-channel", "schedule-changed", data)
+
+	}
+}
+
+func (repo *DBRepo) removeFromMonitorMap(hs models.HostService) {
+	if repo.App.PreferenceMap["monitoring_live"] == "1" {
+		repo.App.Scheduler.Remove(repo.App.MonitorMap[hs.ID])
+
+		data := make(map[string]string)
+		data["host_service_id"] = strconv.Itoa(hs.ID)
+
+		repo.broadcastMessage("public-channel", "schedule-item-removed", data)
 	}
 }

@@ -358,6 +358,21 @@ func (repo *DBRepo) ToggleServiceForHost(w http.ResponseWriter, r *http.Request)
 		log.Println(err)
 	}
 
+	// broadcast
+	hs, _ := repo.DB.GetHostServiceByHostIDServiceID(hostID, serviceID)
+	h, _ := repo.DB.GetHostByID(hostID)
+
+	// add or remove host service from schedule
+	if active == 1 {
+		// add to schedule
+		repo.pushScheduleChangeEvent(hs, "pending")
+		repo.pushStatusChangedEvent(h, hs, "pending")
+		repo.addToMonitorMap(hs)
+	} else {
+		// remove from schedule
+		repo.removeFromMonitorMap(hs)
+	}
+
 	out, _ := json.MarshalIndent(resp, "", "\t")
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(out)

@@ -36,26 +36,32 @@
                 </tr>
                 </thead>
                 <tbody id="schedule-table-body">
-                {{range items}}
-                <tr id="schedule-{{.ID}}">
-                    <td>{{.Host}}</td>
-                    <td>{{.Service}}</td>
-                    <td>{{.ScheduleText}}</td>
-                    <td>
-                        {{if dateAfterYearOne(.LastRunFromHS)}}
-                            {{dateFromLayout(.LastRunFromHS, "2006-01-02 15:04:05")}}
-                        {{else}}
-                            Pending...
-                        {{end}}
-                    </td>
-                    <td>
-                        {{if dateAfterYearOne(.Entry.Next)}}
-                            {{dateFromLayout(.Entry.Next, "2006-01-02 15:04:05")}}
-                        {{else}}
-                            Pending...
-                        {{end}}
-                    </td>
-                </tr>
+                {{if len(items) > 0}}
+                    {{range items}}
+                    <tr id="schedule-{{.ID}}">
+                        <td>{{.Host}}</td>
+                        <td>{{.Service}}</td>
+                        <td>{{.ScheduleText}}</td>
+                        <td>
+                            {{if dateAfterYearOne(.LastRunFromHS)}}
+                                {{dateFromLayout(.LastRunFromHS, "2006-01-02 15:04:05")}}
+                            {{else}}
+                                Pending...
+                            {{end}}
+                        </td>
+                        <td>
+                            {{if dateAfterYearOne(.Entry.Next)}}
+                                {{dateFromLayout(.Entry.Next, "2006-01-02 15:04:05")}}
+                            {{else}}
+                                Pending...
+                            {{end}}
+                        </td>
+                    </tr>
+                    {{end}}
+                {{else}}
+                    <tr>
+                        <td colspan="5">No scheduled checks!</td>
+                    </tr>
                 {{end}}
                 </tbody>
             </table>

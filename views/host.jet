@@ -189,7 +189,7 @@ Host
                                 <tr id="host-service-{{.ID}}">
                                     <td>
                                         {{.Service.ServiceName}}
-                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}}, 'healthy')">Check Now</span>
                                     </td>
                                     <td>
                                         {{if dateAfterYearOne(.LastCheck)}}
@@ -227,7 +227,7 @@ Host
                                 <tr id="host-service-{{.ID}}">
                                     <td>
                                         {{.Service.ServiceName}}
-                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}}, 'warning')">Check Now</span>
                                     </td>
                                     <td>
                                         {{if dateAfterYearOne(.LastCheck)}}
@@ -265,7 +265,7 @@ Host
                                 <tr id="host-service-{{.ID}}">
                                     <td>
                                         {{.Service.ServiceName}}
-                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}})">Check Now</span>
+                                        <span class="pointer badge bg-secondary" onclick="checkNow({{.ID}}, 'problem')">Check Now</span>
                                     </td>
                                     <td>
                                         {{if dateAfterYearOne(.LastCheck)}}

@@ -20,11 +20,89 @@
     // - next-run-event changes
 
     publicChannel.bind("app-starting", data => {
+        let toggle = document.getElementById("monitoring-live");
+        toggle.checked = true;
         successAlert(data.message);
     })
 
     publicChannel.bind("app-stopping", data => {
         warningAlert(data.message);
+
+        let toggle = document.getElementById("monitoring-live");
+        toggle.checked = false;
+
+        let scheduledTable = document.getElementById("schedule-table");
+        if (!!scheduledTable) {
+            scheduledTable.tBodies[0].innerHTML = "";
+
+            let newRow = scheduledTable.tBodies[0].insertRow(-1);
+            let newCell = newRow.insertCell(0);
+            newCell.setAttribute("colspan", "5");
+            newCell.innerHTML = "No scheduled checks!";
+        }
+    })
+
+    publicChannel.bind("schedule-item-removed", data => {
+        let scheduleRow = document.getElementById("schedule-" + data.host_service_id);
+        if (!!scheduleRow) {
+            scheduleRow.parentNode.removeChild(scheduleRow);
+
+            // check to see if we need to add a "no scheduled checks" row
+            let currentTable = document.getElementById("schedule-table");
+            if (currentTable.rows.length === 1) {
+                let newRow = currentTable.tBodies[0].insertRow(-1);
+                let newCell = newRow.insertCell(0);
+                newCell.setAttribute("colspan", "5");
+                newCell.innerHTML = "No scheduled checks!";
+            }
+        }
+    })
+
+    publicChannel.bind("schedule-changed", data => {
+        let scheduledTable = document.getElementById("schedule-table");
+        if (!!scheduledTable) {
+            // check to see if the table contains "No scheduled checks!"
+            let tableContent = scheduledTable.innerHTML;
+            if (tableContent.includes("No scheduled checks!")) {
+                let rowCount = scheduledTable.rows.length;
+                for (let i = rowCount - 1; i > 0; i--) {
+                    scheduledTable.deleteRow(i);
+                }
+            }
+
+            // delete existing row
+            let row = document.getElementById("schedule-" + data.host_service_id);
+            if (!!row) {
+                row.parentNode.removeChild(row);
+            }
+
+            let newRow = scheduledTable.tBodies[0].insertRow()
+            newRow.setAttribute("id", "schedule-" + data.host_service_id);
+
+            let newCell = newRow.insertCell(0);
+            let newText = document.createTextNode(data.host);
+            newCell.appendChild(newText);
+
+            newCell = newRow.insertCell(1);
+            newText = document.createTextNode(data.service);
+            newCell.appendChild(newText);
+
+            newCell = newRow.insertCell(2);
+            newText = document.createTextNode(data.schedule);
+            newCell.appendChild(newText);
+
+            newCell = newRow.insertCell(3);
+            newText = document.createTextNode(data.last_run);
+            newCell.appendChild(newText);
+
+            newCell = newRow.insertCell(4);
+            if (data.next_run === undefined) {
+                newText = document.createTextNode("Pending...");
+            } else {
+                newText = document.createTextNode(data.next_run);
+            }
+            newCell.appendChild(newText);
+        }
     })
 
     publicChannel.bind("host-service-status-changed", data => {

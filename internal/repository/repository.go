@@ -5,12 +5,14 @@ import "github.com/luksbutz/vigilate/internal/models"
 // DatabaseRepo is the database repository
 type DatabaseRepo interface {
 	// preferences
+
 	AllPreferences() ([]models.Preference, error)
 	SetSystemPref(name, value string) error
 	InsertOrUpdateSitePreferences(pm map[string]string) error
 	UpdateSystemPref(name, value string) error
 
 	// users and authentication
+
 	GetUserById(id int) (models.User, error)
 	InsertUser(u models.User) (int, error)
 	UpdateUser(u models.User) error
@@ -23,6 +25,7 @@ type DatabaseRepo interface {
 	CheckForToken(id int, token string) bool
 
 	// hosts
+
 	InsertHost(h models.Host) (int, error)
 	GetHostByID(id int) (models.Host, error)
 	UpdateHost(h models.Host) error
@@ -33,4 +36,5 @@ type DatabaseRepo interface {
 	GetHostServiceByID(id int) (models.HostService, error)
 	UpdateHostService(hs models.HostService) error
 	GetServicesToMonitor() ([]models.HostService, error)
+	GetHostServiceByHostIDServiceID(hostID, serviceID int) (models.HostService, error)
 }
